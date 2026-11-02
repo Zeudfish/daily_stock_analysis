@@ -2,7 +2,7 @@ name: A-share dual project review
 
 on:
   schedule:
-    # 18:20 Beijing time, weekdays. DSA/Vibe each verify the actual trading date.
+    # 18:20 Beijing time, weekdays. Vibe resolves the actual completed A-share date.
     - cron: "20 10 * * 1-5"
   workflow_dispatch:
     inputs:
@@ -50,16 +50,22 @@ jobs:
         with:
           node-version: "22.18"
 
+      - name: Restore Vibe AStock history
+        uses: actions/cache@v4
+        with:
+          path: .cache/vibe-local
+          key: vibe-local-${{ github.run_id }}
+          restore-keys: |
+            vibe-local-
+
       - name: Run both upstream projects and send source reports
-        run: |
-          python scripts/run_dual_review.py
+        run: python scripts/run_dual_review.py
 
       - name: Upload raw reports and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: a-share-review-${{ github.run_id }}
-          path: |
-            output/
+          path: output/
           if-no-files-found: warn
           retention-days: 30
