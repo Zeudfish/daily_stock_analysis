@@ -5,11 +5,6 @@ on:
     # 18:20 Beijing time, weekdays. Vibe resolves the actual completed A-share date.
     - cron: "20 10 * * 1-5"
   workflow_dispatch:
-    inputs:
-      trade_date:
-        description: "Trade date YYYY-MM-DD (blank = latest completed trading day)"
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -24,7 +19,6 @@ jobs:
     timeout-minutes: 50
     env:
       TZ: Asia/Shanghai
-      TRADE_DATE: ${{ inputs.trade_date || '' }}
       REVIEW_TO: zeurdfish@gmail.com
       REVIEW_FROM: ${{ secrets.GMAIL_SENDER || 'zeurdfish@gmail.com' }}
       GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
