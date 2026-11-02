@@ -78,7 +78,7 @@ def run_vibe(repo, override):
     if cache.exists(): shutil.copytree(cache, data, dirs_exist_ok=True)
     (data / "config.json").write_text(json.dumps({
         "provider":{"profile":"deepseek"},
-        "defaults":{"model":"deepseek-chat","max_retries":2,"gate_retries":2,
+        "defaults":{"max_retries":2,"gate_retries":2,
                     "turn_timeout_min":5,"fetch_timeout_sec":120}
     }, ensure_ascii=False), encoding="utf-8")
     env = os.environ.copy()
