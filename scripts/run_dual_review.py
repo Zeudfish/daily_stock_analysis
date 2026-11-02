@@ -74,6 +74,8 @@ def run_vibe(repo, override):
     key = os.getenv("VIBE_DEEPSEEK_API_KEY","").strip()
     if not key: return "failed: missing DEEPSEEK_API_KEY", None, override or ""
     data = repo / ".local"; data.mkdir(exist_ok=True)
+    cache = ROOT / ".cache" / "vibe-local"
+    if cache.exists(): shutil.copytree(cache, data, dirs_exist_ok=True)
     (data / "config.json").write_text(json.dumps({
         "provider":{"profile":"deepseek"},
         "defaults":{"model":"deepseek-chat","max_retries":2,"gate_retries":2,
@@ -134,6 +136,8 @@ def run_vibe(repo, override):
         try: proc.wait(timeout=10)
         except subprocess.TimeoutExpired: proc.kill()
         api_log.close()
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(data, cache, dirs_exist_ok=True, ignore=shutil.ignore_patterns("api.token"))
 
 def send_mail(subject, body, attachments):
     sender=os.getenv("REVIEW_FROM","zeurdfish@gmail.com").strip()
