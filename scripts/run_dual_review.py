@@ -79,7 +79,7 @@ def run_vibe(repo, override):
     (data / "config.json").write_text(json.dumps({
         "provider":{"profile":"deepseek"},
         "defaults":{"model":"deepseek-chat","max_retries":2,"gate_retries":2,
-                    "turn_timeout_min":8,"fetch_timeout_sec":120}
+                    "turn_timeout_min":5,"fetch_timeout_sec":120}
     }, ensure_ascii=False), encoding="utf-8")
     env = os.environ.copy()
     token = uuid.uuid4().hex + uuid.uuid4().hex
@@ -102,13 +102,15 @@ def run_vibe(repo, override):
         view = api(base+"/view/shortline_review",token,timeout=180)
         trade_day = override or str(view.get("date") or "")
         if not trade_day: raise RuntimeError("Vibe did not resolve a completed trading date")
+        if not override and trade_day != date.today().isoformat():
+            return "skip: no A-share trading session today", None, trade_day
         started = api(base+"/view/shortline_review",token,method="POST",
                       body={"action":"start","date":trade_day},timeout=180)
         run_id = str(started.get("id") or "")
         if not run_id: raise RuntimeError("Vibe start action returned no run id")
         log(f"Vibe review started: {trade_day}, run={run_id}")
         final = None
-        for _ in range(90):
+        for _ in range(120):
             state = api(base+"/view/shortline_review?date="+urllib.parse.quote(trade_day),token,timeout=60)
             final = next((x for x in (state.get("runs") or []) if str(x.get("id"))==run_id),None)
             if final and final.get("done"): break
@@ -169,6 +171,9 @@ def main():
         if vibe_day: trade_day=vibe_day
         if report and report.exists(): attachments.append(report)
     except Exception as e: statuses["vibe-astock"]=f"failed: {type(e).__name__}: {e}"; log(str(e))
+    if statuses.get("vibe-astock","").startswith("skip") and not attachments:
+        log("No A-share trading session today; skip email delivery.")
+        return 0
     run_url=os.getenv("GITHUB_SERVER_URL","https://github.com")+"/"+os.getenv("GITHUB_REPOSITORY","")+"/actions/runs/"+os.getenv("GITHUB_RUN_ID","")
     full=all(statuses.get(k)=="success" for k in ("daily_stock_analysis","vibe-astock"))
     label="完整" if full else ("部分完成" if attachments else "失败")
